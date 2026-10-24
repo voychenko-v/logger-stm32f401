@@ -1,0 +1,30 @@
+# Build output
+Debug/
+Release/
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.o
+*.d
+
+# STM32CubeIDE
+.settings/
+*.launch
+.metadata/
+RemoteSystemsTempFiles/
+
+# STM32CubeMX
+*.ioc.bak
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.sal
+*.tmp
+*.log
