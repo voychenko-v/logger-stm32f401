@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -45,7 +46,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+static volatile uint8_t g_poll_flag = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -89,10 +90,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
   uart_log_init(&huart2);
   printf("\r\n=== Env Logger started ===\r\n");
   printf("SYSCLK = %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
+
+  HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -102,6 +106,11 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	if (g_poll_flag)
+	{
+		g_poll_flag = 0;
+		printf("tick %lu ms\r\n", HAL_GetTick());
+	}
   }
   /* USER CODE END 3 */
 }
@@ -152,7 +161,13 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM3)
+    {
+        g_poll_flag = 1;
+    }
+}
 /* USER CODE END 4 */
 
 /**
