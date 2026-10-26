@@ -29,6 +29,7 @@
 #include "uart_log.h"
 #include "i2c_bus.h"
 #include "ds3231.h"
+#include "bme280.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,6 +114,14 @@ int main(void) {
 		ds3231_set_time(&bt);
 	}
 
+	uint8_t bme_id = 0;
+	status_t bs = bme280_init(&hi2c1, &bme_id);
+	if (bs == STATUS_OK) {
+	    printf("BME280 OK (id=0x%02X)\r\n", bme_id);
+	} else {
+	    printf("BME280 init FAILED: status=%d id=0x%02X\r\n", (int)bs, bme_id);
+	}
+
 	/* USER CODE END 2 */
 
 	/* Infinite loop */
@@ -121,16 +130,22 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		if (g_poll_flag) {
-			g_poll_flag = 0;
-			rtc_time_t now;
-			status_t st = ds3231_get_time(&now);
-			if (st == STATUS_OK) {
-				printf("[%02u:%02u:%02u] %04u-%02u-%02u\r\n", now.hour, now.min,
-						now.sec, now.year, now.month, now.day);
-			} else {
-				printf("RTC read error: %d\r\n", (int) st);
-			}
+		if (g_poll_flag)
+		{
+		    g_poll_flag = 0;
+
+		    rtc_time_t now;
+		    bme280_data_t env;
+		    status_t rs = ds3231_get_time(&now);
+		    status_t es = bme280_read(&env);
+
+		    if (rs == STATUS_OK && es == STATUS_OK) {
+		        printf("[%02u:%02u:%02u] T:%.1f H:%.1f P:%.1f\r\n",
+		               now.hour, now.min, now.sec,
+		               env.temp_c, env.hum_pct, env.press_hpa);
+		    } else {
+		        printf("ERR rtc=%d bme=%d\r\n", (int)rs, (int)es);
+		    }
 		}
 	}
 	/* USER CODE END 3 */
