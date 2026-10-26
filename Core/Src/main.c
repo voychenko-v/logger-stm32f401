@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -26,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "uart_log.h"
+#include "i2c_bus.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -91,12 +93,15 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   MX_TIM3_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   uart_log_init(&huart2);
   printf("\r\n=== Env Logger started ===\r\n");
   printf("SYSCLK = %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
 
   HAL_TIM_Base_Start_IT(&htim3);
+
+  i2c_bus_scan(&hi2c1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
