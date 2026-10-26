@@ -1,0 +1,12 @@
+#ifndef APP_STATUS_H
+#define APP_STATUS_H
+
+typedef enum {
+	STATUS_OK = 0,
+	STATUS_ERR_I2C,
+	STATUS_ERR_TIMEOUT,
+	STATUS_ERR_INVALID,
+	STATUS_ERR_NOT_READY
+} status_t;
+
+#endif /* APP_STATUS_H */
