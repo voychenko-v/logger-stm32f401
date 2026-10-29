@@ -28,6 +28,9 @@
 #define PRESS_MIN_HPA 300.0f
 #define PRESS_MAX_HPA 1100.0f
 
+#define ADC_SKIPPED_20BIT  0x80000
+#define ADC_SKIPPED_16BIT  0x8000
+
 typedef struct {
     uint16_t T1; int16_t T2, T3;
     uint16_t P1; int16_t P2, P3, P4, P5, P6, P7, P8, P9;
@@ -140,30 +143,31 @@ status_t bme280_init(I2C_HandleTypeDef *hi2c, uint8_t *chip_id)
     return r;
 }
 
-status_t bme280_read(bme280_data_t *out)
+status_t bme280_start(void)
 {
     if (s_hi2c == NULL) return STATUS_ERR_NOT_READY;
 
     status_t r = reg_write8(REG_CTRL_HUM, CTRL_HUM_OSRS_X1);
     if (r != STATUS_OK) return r;
-    r = reg_write8(REG_CTRL_MEAS, CTRL_MEAS_FORCED_X1);
-    if (r != STATUS_OK) return r;
+    return reg_write8(REG_CTRL_MEAS, CTRL_MEAS_FORCED_X1);
+}
 
-    uint32_t t0 = HAL_GetTick();
-    uint8_t st;
-    do {
-        r = reg_read(REG_STATUS, &st, 1);
-        if (r != STATUS_OK) return r;
-        if ((HAL_GetTick() - t0) > BME280_MEAS_TIMEOUT_MS) return STATUS_ERR_TIMEOUT;
-    } while (st & STATUS_MEASURING);
+status_t bme280_fetch(bme280_data_t *out)
+{
+    if (s_hi2c == NULL) return STATUS_ERR_NOT_READY;
 
     uint8_t d[8];
-    r = reg_read(REG_DATA, d, sizeof d);
+    status_t r = reg_read(REG_DATA, d, sizeof d);
     if (r != STATUS_OK) return r;
 
     int32_t adc_P = (int32_t)(((uint32_t)d[0] << 12) | ((uint32_t)d[1] << 4) | (d[2] >> 4));
     int32_t adc_T = (int32_t)(((uint32_t)d[3] << 12) | ((uint32_t)d[4] << 4) | (d[5] >> 4));
     int32_t adc_H = (int32_t)(((uint32_t)d[6] << 8)  |  d[7]);
+
+    if (adc_P == ADC_SKIPPED_20BIT || adc_T == ADC_SKIPPED_20BIT ||
+        adc_H == ADC_SKIPPED_16BIT) {
+        return STATUS_ERR_INVALID;
+    }
 
     int32_t t_fine;
     out->temp_c    = (float)comp_temp(adc_T, &t_fine) / 100.0f;

@@ -34,7 +34,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef enum { POLL_IDLE, POLL_WAIT_CONV } poll_state_t;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -51,6 +51,8 @@
 
 /* USER CODE BEGIN PV */
 static volatile uint8_t g_poll_flag = 0;
+static poll_state_t g_poll_state = POLL_IDLE;
+static uint32_t g_conv_start_ms = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -130,22 +132,40 @@ int main(void) {
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
-		if (g_poll_flag)
+		switch (g_poll_state)
 		{
-		    g_poll_flag = 0;
-
-		    rtc_time_t now;
-		    bme280_data_t env;
-		    status_t rs = ds3231_get_time(&now);
-		    status_t es = bme280_read(&env);
-
-		    if (rs == STATUS_OK && es == STATUS_OK) {
-		        printf("[%02u:%02u:%02u] T:%.1f H:%.1f P:%.1f\r\n",
-		               now.hour, now.min, now.sec,
-		               env.temp_c, env.hum_pct, env.press_hpa);
-		    } else {
-		        printf("ERR rtc=%d bme=%d\r\n", (int)rs, (int)es);
+		case POLL_IDLE:
+		    if (g_poll_flag)
+		    {
+		        g_poll_flag = 0;
+		        status_t s = bme280_start();
+		        if (s == STATUS_OK) {
+		            g_conv_start_ms = HAL_GetTick();
+		            g_poll_state = POLL_WAIT_CONV;
+		        } else {
+		            printf("ERR bme start=%d\r\n", (int)s);
+		        }
 		    }
+		    break;
+
+		case POLL_WAIT_CONV:
+		    if ((HAL_GetTick() - g_conv_start_ms) >= BME280_CONVERSION_MS)
+		    {
+		        rtc_time_t now;
+		        bme280_data_t env;
+		        status_t rs = ds3231_get_time(&now);
+		        status_t es = bme280_fetch(&env);
+
+		        if (rs == STATUS_OK && es == STATUS_OK) {
+		            printf("[%02u:%02u:%02u] T:%.1f H:%.1f P:%.1f\r\n",
+		                   now.hour, now.min, now.sec,
+		                   env.temp_c, env.hum_pct, env.press_hpa);
+		        } else {
+		            printf("ERR rtc=%d bme=%d\r\n", (int)rs, (int)es);
+		        }
+		        g_poll_state = POLL_IDLE;
+		    }
+		    break;
 		}
 	}
 	/* USER CODE END 3 */

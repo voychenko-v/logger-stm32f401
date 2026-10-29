@@ -5,6 +5,7 @@
 #include "app_status.h"
 
 #define BME280_I2C_ADDR   0x76U
+#define BME280_CONVERSION_MS  10U
 
 typedef struct {
     float temp_c;
@@ -13,6 +14,7 @@ typedef struct {
 } bme280_data_t;
 
 status_t bme280_init(I2C_HandleTypeDef *hi2c, uint8_t *chip_id);
-status_t bme280_read(bme280_data_t *out);
+status_t bme280_start(void);
+status_t bme280_fetch(bme280_data_t *out);
 
 #endif /* BME280_H */
