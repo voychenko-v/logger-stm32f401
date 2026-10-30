@@ -104,28 +104,9 @@ int main(void)
 	printf("\r\n=== Env Logger started ===\r\n");
 	printf("SYSCLK = %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
 
-	HAL_TIM_Base_Start_IT(&htim3);
-
 	i2c_bus_scan(&hi2c1);
-
-	bool rtc_lost = false;
-	if (ds3231_init(&hi2c1, &rtc_lost) != STATUS_OK) {
-		printf("RTC init FAILED\r\n");
-	} else if (rtc_lost) {
-		rtc_time_t bt;
-		ds3231_build_time(&bt);
-		printf("RTC time lost, set from build time\r\n");
-		ds3231_set_time(&bt);
-	}
-
-	uint8_t bme_id = 0;
-	status_t bs = bme280_init(&hi2c1, &bme_id);
-	if (bs == STATUS_OK) {
-	    printf("BME280 OK (id=0x%02X)\r\n", bme_id);
-	} else {
-	    printf("BME280 init FAILED: status=%d id=0x%02X\r\n", (int)bs, bme_id);
-	}
-
+	logger_init();
+	HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
