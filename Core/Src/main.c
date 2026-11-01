@@ -20,6 +20,7 @@
 #include "main.h"
 #include "dma.h"
 #include "i2c.h"
+#include "iwdg.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -32,6 +33,8 @@
 #include "ds3231.h"
 #include "bme280.h"
 #include "logger.h"
+#include "reset_info.h"
+#include "watchdog.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -83,7 +86,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+	__HAL_DBGMCU_FREEZE_IWDG();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -99,13 +102,18 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM3_Init();
   MX_I2C1_Init();
+  MX_IWDG_Init();
   /* USER CODE BEGIN 2 */
 	uart_log_init(&huart2);
 	printf("\r\n=== Env Logger started ===\r\n");
 	printf("SYSCLK = %lu Hz\r\n", HAL_RCC_GetSysClockFreq());
+	printf("Reset reason: %s\r\n", reset_info_name(reset_info_get_and_clear()));
 
+	watchdog_kick();
 	i2c_bus_scan(&hi2c1);
+	watchdog_kick();
 	logger_init();
+	watchdog_kick();
 	HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
 
@@ -116,6 +124,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		logger_task();
+		watchdog_kick();
+
 	}
   /* USER CODE END 3 */
 }
@@ -137,8 +147,9 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 25;
