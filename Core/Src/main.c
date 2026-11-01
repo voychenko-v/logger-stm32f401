@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
 #include "dma.h"
 #include "i2c.h"
 #include "iwdg.h"
@@ -103,6 +104,7 @@ int main(void)
   MX_TIM3_Init();
   MX_I2C1_Init();
   MX_IWDG_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 	uart_log_init(&huart2);
 	printf("\r\n=== Env Logger started ===\r\n");

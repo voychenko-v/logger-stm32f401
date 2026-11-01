@@ -9,6 +9,8 @@
 #include "bme280.h"
 #include "log_entry.h"
 #include "log_format.h"
+#include "adc.h"
+#include "light.h"
 
 #define LOG_LINE_MAX          96U
 #define LOGGER_MAX_RETRIES    3U
@@ -27,6 +29,7 @@ static uint8_t          s_retry = 0;
 static uint32_t         s_err_cnt = 0;
 static bool             s_rtc_ok = false;
 static bool             s_bme_ok = false;
+static bool             s_light_ok = false;
 
 static void sensors_init(void)
 {
@@ -57,6 +60,8 @@ void logger_init(void)
     s_rtc_ok = false;
     s_bme_ok = false;
     sensors_init();
+    s_light_ok = (light_init(&hadc1) == STATUS_OK);
+    printf("Light sensor: %s\r\n", s_light_ok ? "OK" : "FAIL");
 }
 
 void logger_on_tick(void)
@@ -120,6 +125,11 @@ static void fetch_and_publish(void)
     e.temp_c    = env.temp_c;
     e.hum_pct   = env.hum_pct;
     e.press_hpa = env.press_hpa;
+
+    light_data_t l;
+    e.lux_valid = (s_light_ok && light_read(&l) == STATUS_OK);
+    e.lux       = e.lux_valid ? l.lux : 0.0f;
+
     e.err_cnt   = s_err_cnt;
 
     char line[LOG_LINE_MAX];
