@@ -74,7 +74,7 @@ int _write(int fd, char *ptr, int len)
     return len;
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+void uart_log_on_tx_complete(UART_HandleTypeDef *huart)
 {
     if (huart != s_huart) {
         return;
@@ -84,9 +84,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
     tx_kick();
 }
 
-void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
+void uart_log_on_error(UART_HandleTypeDef *huart)
 {
-    if (huart != s_huart) {
+    if (huart != s_huart || (huart->ErrorCode & HAL_UART_ERROR_DMA) == 0U) {
         return;
     }
     s_tail = (uint16_t)((s_tail + s_dma_len) & TX_BUF_MASK);

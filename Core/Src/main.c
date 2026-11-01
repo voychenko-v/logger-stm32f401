@@ -36,6 +36,8 @@
 #include "logger.h"
 #include "reset_info.h"
 #include "watchdog.h"
+#include "uart_rx.h"
+#include "cli.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,6 +117,7 @@ int main(void)
 	i2c_bus_scan(&hi2c1);
 	watchdog_kick();
 	logger_init();
+	uart_rx_init(&huart2);
 	watchdog_kick();
 	HAL_TIM_Base_Start_IT(&htim3);
   /* USER CODE END 2 */
@@ -126,6 +129,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 		logger_task();
+		cli_task();
 		watchdog_kick();
 
 	}
@@ -179,11 +183,25 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
+	uart_log_on_tx_complete(huart);
+}
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+	uart_rx_on_byte(huart);
+}
+
+void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
+	uart_log_on_error(huart);
+	uart_rx_on_error(huart);
+}
+
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	if (htim->Instance == TIM3) {
 	    logger_on_tick();
 	}
 }
+
 /* USER CODE END 4 */
 
 /**

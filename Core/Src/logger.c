@@ -23,6 +23,8 @@ typedef enum {
 } logger_state_t;
 
 static volatile uint8_t s_tick = 0;
+static volatile uint32_t s_interval_s = LOGGER_INTERVAL_DEF_S;
+static volatile uint32_t s_sec_cnt = 0;
 static logger_state_t   s_state = LOGGER_IDLE;
 static uint32_t         s_state_start_ms = 0;
 static uint8_t          s_retry = 0;
@@ -66,8 +68,25 @@ void logger_init(void)
 
 void logger_on_tick(void)
 {
-    s_tick = 1;
+    if (++s_sec_cnt >= s_interval_s) {
+        s_sec_cnt = 0;
+        s_tick = 1;
+    }
 }
+
+status_t logger_set_interval(uint32_t seconds)
+{
+    if (seconds < LOGGER_INTERVAL_MIN_S || seconds > LOGGER_INTERVAL_MAX_S) {
+        return STATUS_ERR_INVALID;
+    }
+    s_interval_s = seconds;
+    s_sec_cnt = 0;
+    return STATUS_OK;
+}
+
+uint32_t logger_get_interval(void)   { return s_interval_s; }
+uint32_t logger_get_err_cnt(void)    { return s_err_cnt; }
+void     logger_clear_errors(void)   { s_err_cnt = 0; }
 
 static void on_failure(status_t rs, status_t es)
 {
